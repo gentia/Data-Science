@@ -1,6 +1,7 @@
-## These two functions cache the data given and then after an initial calculation of the inverse, cache it 
+## These two functions cache the data for a matrix given 
+## and then after an initial calculation of the inverse, cache it so that it can be called upon later 
 
-## This function creates the cache matrix and caches the data inputed
+## This function has 4 nested functions that set the matrix data and caches the data inputed
 
 makeCacheMatrix <- function( x = matrix()){
   i <- NULL
@@ -16,7 +17,8 @@ makeCacheMatrix <- function( x = matrix()){
 }
 
 
-## This function, after an initial calculation of the inverse, caches the answer 
+## This function, after an initial calculation of the inverse based off the data from the previous function, 
+## caches the answer of the inverse matrix 
 
 cacheSolve <- function(x,...){
   i <- x$getinverse()
