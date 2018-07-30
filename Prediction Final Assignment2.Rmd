@@ -1,0 +1,87 @@
+---
+title: "Prediction Final Assignment2"
+author: "Anais Gentilhomme"
+date: "July 27, 2018"
+output: html_document
+---
+## Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fit it is not possible to collect a large amount of data about personal activity relatively inexpensively. THese type of devices are part of te quantified self movement- a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patters in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarey quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 ways:  
+1. Class A: Correct, according to specifications <br/> 
+2. Class B: Incorrect, throwing the elbow to the front <br/>
+3. Class C: Incorrect, lifting the dumbbell only halfway <br/> 
+4. Class D: Incorrect, lowering the dumbell only halfway <br/> 
+5. Class E: Incorrect, throwing the hips to the front<br/> 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+library(randomForest)
+library(rpart)
+library(rpart.plot)
+set.seed(5678)
+```
+# Preliminary Analysis
+##Loading the Testing and Training Data and Cleaning it up
+```{r}
+TrainingData <- read.csv("pml-training (1).csv", header = TRUE, na.strings = c("NA", "","#DIV/0!"))
+TestingData <- read.csv("pml-testing.csv", header = TRUE, na.strings = c("NA", "","#DIV/0!"))
+dim(TrainingData)
+dim(TestingData)
+
+# Find the columns that have all missing values and delete them 
+TrainingData <- TrainingData[,colSums(is.na(TrainingData)) == 0]
+TestingData <- TestingData[,colSums(is.na(TestingData)) == 0]
+
+#Equalize the amount of predictors between the Training and Testing Data set( for the final simulation)
+TrainingData <- TrainingData[, -c(1:7)]
+TestingData <- TestingData[,-c(1:7)]
+```
+
+##Seperating the Data 
+ Here we seperate the data into two data sets, 60% for Training and 40% for Testing
+```{r}
+SampleData <- createDataPartition(y=TrainingData$classe, p=0.75, list = FALSE)
+SampleTraining <- TrainingData[SampleData,]
+SampleTesting <- TrainingData[-SampleData,]
+dim(SampleTraining)
+dim(SampleTesting)
+```
+## The Data at a Glance
+In order to get a idea of how frequently the exercise are being done correctly(variable:classe), a bar graph is presented below.
+```{r}
+plot(SampleTraining$classe, main = "Frequency of Exercises Completed Correctly or Incorrectly", xlab = "Classes", ylab = "Frequency" ) 
+```
+
+As can be seen above, the amount of times the exercise was done correctly(A), is greater than the times is was done incorrectly according to each class. However, as a whole the frequence at which the exercise was completed incorrectly is much much greater ( sum of Classes B-E) than the times it was completed the proper way.
+
+## Random Forest
+```{r}
+RF <- randomForest(classe~., data = SampleTraining)
+TrainingPredict <- predict(RF, SampleTraining)
+print(confusionMatrix(TrainingPredict,SampleTraining$classe))
+```
+This model works extremely well with the Training Dataset with an accuracy rate of 1. However, in order for it to be legitamate we need to cross validate it with the Testing Data set that was isolated earlier.
+
+## Cross - Validation
+```{r}
+TestingPredict <- predict(RF, SampleTesting)
+print(confusionMatrix(TestingPredict,SampleTesting$classe))
+```
+
+##Final Testing
+```{r}
+FinalTest <- predict(RF, TestingData, type = "class")
+FinalTest
+```
+
+Writting files for Submission
+```{r}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    ProjectName <- paste0("problem_id_",i,".txt")
+    write.table(x[i], file = ProjectName,quote = FALSE,row.names = FALSE,col.names = FALSE)
+  }
+}
+
+pml_write_files(FinalTest)
+```
